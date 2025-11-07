@@ -43,7 +43,7 @@ except (joblib.UnpicklingError, FileNotFoundError) as e:
     print(f"랜덤 포레스트 모델 로드 실패: {e}")
 
 # PUBG API 설정
-API_KEY = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJqdGkiOiI5NGI4M2M2MC01MTc4LTAxM2QtMjE2YS0xZTk3NmMxZGFkMzUiLCJpc3MiOiJnYW1lbG9ja2VyIiwiaWF0IjoxNzI1OTU1MTkxLCJwdWIiOiJibHVlaG9sZSIsInRpdGxlIjoicHViZyIsImFwcCI6InNhbmcifQ.-8ErzX775Yhl5hrZanUz64CR9fFhMtRt5EzjRsMeiHE' 
+API_KEY = '' # PUBG API에서 개인 키 발급 필요 
 HEADERS = {
     'Authorization': f'Bearer {API_KEY}',
     'Accept': 'application/vnd.api+json'
