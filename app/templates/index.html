@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>배틀그라운드 유저 분석</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #e9ecef;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #343a40;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .form-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        form {
+            display: flex;
+            align-items: center;
+        }
+        label {
+            font-size: 18px;
+            margin-right: 10px;
+            color: #495057;
+        }
+        input[type="text"] {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            width: 200px; /* Adjusted width */
+            margin-right: 10px;
+        }
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 5px; /* Adjusted margin */
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #result {
+            margin-top: 20px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            display: none;
+        }
+        h2, h3 {
+            color: #343a40;
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+        }
+        th {
+            background-color: #f1f3f5;
+            color: #495057;
+        }
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        tr:hover {
+            background-color: #e2e6ea;
+        }
+        #status {
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .success {
+            color: #28a745;
+        }
+        .error {
+            color: #dc3545;
+        }
+        .visualization-container {
+            margin-top: 20px;
+            text-align: center;
+            background-color: #ffffff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .visualization-container h3 {
+            background: linear-gradient(135deg, #4caf50, #2e7d32);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 0;
+            margin-bottom: 15px;
+        }
+        .visualization-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <h1>유저 분석</h1>
+    <div class="form-container">
+        <form id="playerForm">
+            <label for="player_name">플레이어 이름:</label>
+            <input type="text" id="player_name" name="player_name" required>
+            <button type="submit" name="platform" value="steam">Steam</button>
+            <button type="submit" name="platform" value="kakao">Kakao</button>
+        </form>
+    </div>
+
+    <div id="result">
+        <h2>결과</h2>
+        <p id="status"></p>
+    
+        <div id="summary-results">
+            <h3>종합 결과</h3>
+            <table id="summary-table">
+                <thead>
+                    <tr>
+                        <th>모델</th>
+                        <th>평균 예측 확률</th>
+                        <th>긍정 예측 비율</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>XGBoost</td>
+                        <td id="model1-avg-prediction"></td>
+                        <td id="model1-positive-ratio"></td>
+                    </tr>
+                    <tr>
+                        <td>Random Forest</td>
+                        <td id="model2-avg-prediction"></td>
+                        <td id="model2-positive-ratio"></td>
+                    </tr>
+                </tbody>
+            </table>
+            <p><strong>분석된 매치 수:</strong> <span id="match-count"></span></p>
+        </div>
+
+        <div style="margin-top: 20px; text-align: center;">
+            <button id="view-detailed-predictions">매치별 예측 확률 보기</button>
+        </div>
+
+        <div id="detailed-predictions" style="display:none; margin-top: 20px;">
+            <h3>매치별 예측 확률</h3>
+            <table id="predictions-table" style="width:100%; border-collapse: collapse;">
+                <thead>
+                    <tr>
+                        <th>매치 ID</th>
+                        <th>생존 시간 (초)</th>
+                        <th>XGBoost 예측 정확도</th>
+                        <th>랜덤 포레스트 정확도</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- 시각화 요소들 -->
+        <div id="visualization" class="visualization-container">
+            <h3>XGBoost 유저 상태 시각화</h3>
+            <img id="visualization-img" src="" alt="XGBoost 시각화 이미지" style="display: none;">
+        </div>
+        <div id="rf-visualization" class="visualization-container">
+            <h3>랜덤 포레스트 유저 상태 시각화</h3>
+            <img id="rf-visualization-img" src="" alt="랜덤 포레스트 시각화 이미지" style="display: none;">
+        </div>
+
+        <div id="percentile-visualization" class="visualization-container">
+            <h3>플레이어의 백분위 반원 차트</h3>
+            <label for="feature-select">특성 선택:</label>
+            <select id="feature-select">
+                <option value="DBNOs">DBNOs</option>
+                <option value="assists">assists</option>
+                <option value="boosts">boosts</option>
+                <option value="damageDealt">damageDealt</option>
+                <option value="headshotKills">headshotKills</option>
+                <option value="kills">kills</option>
+                <option value="longestKill">longestKill</option>
+                <!-- 추가적인 특성이 있다면 여기에 추가하세요 -->
+            </select>
+            <button id="view-percentile-chart">반원형 파이 차트 보기</button>
+            <img id="percentile-chart-img" src="" alt="백분위 반원형 차트 이미지" style="display:none;">
+        </div>
+
+        <!-- 각 모델별 변화 추세 -->
+        <div id="trend-visualization" class="visualization-container">
+            <h3>XGBoost 매치 시간에 따른 예측 확률 변화 추세</h3>
+            <button id="view-trend">XGBoost 변화 추세 보기</button>
+            <img id="trend-visualization-img" src="" alt="추세 시각화 이미지" style="display: none;">
+        </div>
+        <div id="rf-trend-visualization" class="visualization-container">
+            <h3>랜덤 포레스트 매치 시간에 따른 예측 확률 변화 추세</h3>
+            <button id="view-rf-trend">랜덤 포레스트 변화 추세 보기</button>
+            <img id="rf-trend-visualization-img" src="" alt="랜덤 포레스트 추세 시각화 이미지" style="display: none;">
+        </div>
+
+        <div style="margin-top: 20px; text-align: center;">
+            <button id="download-report">XGBoost 상세 보고서 다운로드</button>
+        </div>
+        
+        <div style="margin-top: 20px; text-align: center;">
+            <button id="download-report-rf">랜덤 포레스트 상세 보고서 다운로드</button>
+        </div>
+    </div>
+    
+    <script>
+        $(document).ready(function() {
+            let lastClickedPlatform = '';
+
+            $('#playerForm button').click(function() {
+                lastClickedPlatform = $(this).val();
+            });
+
+            $('#playerForm').submit(function(event) {
+                event.preventDefault();
+                let playerName = $('#player_name').val();
+    
+                $.ajax({
+                    type: 'POST',
+                    url: '/predict',
+                    data: { 
+                        player_name: playerName,
+                        platform: lastClickedPlatform
+                    },
+                    success: function(response) {
+                        $('#result').show();
+                        if (response.status === 'success') {
+                            $('#status').text('예측 결과가 성공적으로 수신되었습니다.').removeClass('error').addClass('success');
+    
+                            let data = response.data.summary;
+                            $('#model1-avg-prediction').text(parseFloat(data.model1.avg_prediction).toFixed(2));
+                            $('#model1-positive-ratio').text(parseFloat(data.model1.positive_ratio).toFixed(2));
+                            $('#model2-avg-prediction').text(parseFloat(data.model2.avg_prediction).toFixed(2));
+                            $('#model2-positive-ratio').text(parseFloat(data.model2.positive_ratio).toFixed(2));
+                            $('#match-count').text(data.match_count);
+    
+                            // 모델별 시각화 이미지 업데이트
+                            $('#visualization-img').attr('src', '/plot?player_name=' + encodeURIComponent(playerName) + '&platform=' + lastClickedPlatform).show();
+                            $('#rf-visualization-img').attr('src', '/plot_rf?player_name=' + encodeURIComponent(playerName) + '&platform=' + lastClickedPlatform).show();
+                        } else {
+                            $('#status').text('오류: ' + response.message).removeClass('success').addClass('error');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        $('#status').text('서버 오류가 발생했습니다: ' + error).removeClass('success').addClass('error');
+                    }
+                });
+            });
+    
+            // 반원형 파이 차트 보기 버튼 클릭 시 차트 표시/숨기기
+            $('#view-percentile-chart').click(function() {
+                let playerName = $('#player_name').val();
+                let feature = $('#feature-select').val();
+    
+                // 선택한 특성에 따라 파이차트를 업데이트
+                $('#percentile-chart-img').attr('src', `/plot_percentiles?player_name=${encodeURIComponent(playerName)}&feature=${encodeURIComponent(feature)}&platform=${lastClickedPlatform}`).show();
+            });
+            // 변화 추세 버튼 핸들러 추가
+            $('#view-trend').click(function() {
+                let playerName = $('#player_name').val();
+                $('#trend-visualization-img').attr('src', '/plot_trend?player_name=' + encodeURIComponent(playerName) + '&platform=' + lastClickedPlatform).show();
+            });
+            $('#view-rf-trend').click(function() {
+                let playerName = $('#player_name').val();
+                $('#rf-trend-visualization-img').attr('src', '/plot_trend_rf?player_name=' + encodeURIComponent(playerName) + '&platform=' + lastClickedPlatform).show();
+            });
+
+            $('#download-report').click(function() {
+                let playerName = $('#player_name').val();
+                window.location.href = '/download_report?player_name=' + encodeURIComponent(playerName) + '&platform=' + lastClickedPlatform;
+            });
+            $('#download-report-rf').click(function() {
+                let playerName = $('#player_name').val();
+                window.location.href = '/download_report_rf?player_name=' + encodeURIComponent(playerName) + '&platform=' + lastClickedPlatform;
+            });
+
+            $('#view-detailed-predictions').click(function() {
+                let playerName = $('#player_name').val();
+    
+                $.ajax({
+                    type: 'GET',
+                    url: '/detailed_predictions',
+                    data: { 
+                        player_name: playerName,
+                        platform: lastClickedPlatform
+                     },
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            $('#detailed-predictions').show();
+                            let tableBody = $('#predictions-table tbody');
+                            tableBody.empty();
+    
+                            response.data.forEach((match) => {
+                                tableBody.append(`
+                                    <tr>
+                                        <td>${match.match_id}</td>
+                                        <td>${match.timeSurvived}</td>
+                                        <td>${(match.xgb_prediction * 100).toFixed(2)}%</td>
+                                        <td>${(match.rf_prediction * 100).toFixed(2)}%</td>
+                                    </tr>
+                                `);
+                            });
+                        } else {
+                            alert(response.message);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        alert("데이터를 불러오는 중 오류가 발생했습니다: " + error);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

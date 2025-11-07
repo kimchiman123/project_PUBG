@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>분석 결과</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #e9ecef;
+            padding: 20px;
+        }
+        h2 {
+            color: #343a40;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+        }
+        th {
+            background-color: #f1f3f5;
+            color: #495057;
+        }
+        #visualization {
+            margin-top: 30px;
+            text-align: center;
+        }
+        #visualization img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <h2>분석 결과</h2>
+    
+    {% if result %}
+        <table>
+            <thead>
+                <tr>
+                    <th>모델</th>
+                    <th>평균 예측 확률</th>
+                    <th>긍정 예측 비율</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>XGBoost</td>
+                    <td>{{ result['summary']['model1']['avg_prediction'] }}</td>
+                    <td>{{ result['summary']['model1']['positive_ratio'] }}</td>
+                </tr>
+                <tr>
+                    <td>Random Forest</td>
+                    <td>{{ result['summary']['model2']['avg_prediction'] }}</td>
+                    <td>{{ result['summary']['model2']['positive_ratio'] }}</td>
+                </tr>
+                <tr>
+                    <td>Isolation Forest</td>
+                    <td>{{ result['summary']['model3']['avg_prediction'] }}</td>
+                    <td>{{ result['summary']['model3']['positive_ratio'] }}</td>
+                </tr>
+            </tbody>
+        </table>
+        <p><strong>분석된 매치 수:</strong> {{ result['summary']['match_count'] }}</p>
+    
+        <div id="visualization">
+            <h3>유저 상태 시각화</h3>
+            <img src="{{ img_url }}" alt="시각화 이미지">
+        </div>
+    {% else %}
+        <p>{{ error }}</p>
+    {% endif %}
+</body>
+</html>
